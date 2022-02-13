@@ -1,3 +1,8 @@
+data/
+yolov5l.pt
+yolov5m.pt
+yolov5x.pt
+
 # Repo-specific DockerIgnore -------------------------------------------------------------------------------------------
 #.git
 .cache
