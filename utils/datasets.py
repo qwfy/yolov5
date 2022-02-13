@@ -156,7 +156,7 @@ class _RepeatSampler(object):
 
 
 class LoadImages:  # for inference
-    def __init__(self, path, img_size=640, stride=32, auto=True):
+    def __init__(self, path, img_size=640, stride=32, auto=True, fps=None):
         p = str(Path(path).resolve())  # os-agnostic absolute path
         if '*' in p:
             files = sorted(glob.glob(p, recursive=True))  # glob
@@ -178,14 +178,18 @@ class LoadImages:  # for inference
         self.video_flag = [False] * ni + [True] * nv
         self.mode = 'image'
         self.auto = auto
+        self.fps = fps
+        self.n_frames = ni + self._count_video_frames()
         if any(videos):
             self.new_video(videos[0])  # new video
         else:
             self.cap = None
         assert self.nf > 0, f'No images or videos found in {p}. ' \
                             f'Supported formats are:\nimages: {IMG_FORMATS}\nvideos: {VID_FORMATS}'
+        self.logger = logging.getLogger(__name__)
 
     def __iter__(self):
+        # how many files are processed
         self.count = 0
         return self
 
@@ -199,6 +203,7 @@ class LoadImages:  # for inference
             self.mode = 'video'
             ret_val, img0 = self.cap.read()
             if not ret_val:
+                # this video is done
                 self.count += 1
                 self.cap.release()
                 if self.count == self.nf:  # last video
@@ -208,15 +213,17 @@ class LoadImages:  # for inference
                     self.new_video(path)
                     ret_val, img0 = self.cap.read()
 
+            frame = self.frame
             self.frame += 1
-            print(f'video {self.count + 1}/{self.nf} ({self.frame}/{self.frames}) {path}: ', end='')
+            self.logger.debug(f'video {self.count + 1}/{self.nf} ({self.frame}/{self.frames}) {path}')
 
         else:
             # Read image
             self.count += 1
             img0 = cv2.imread(path)  # BGR
             assert img0 is not None, 'Image Not Found ' + path
-            # print(f'image {self.count}/{self.nf} {path}: ', end='')
+            frame = 0
+            self.logger.debug(f'image {self.count}/{self.nf} {path}')
 
         # Padded resize
         img = letterbox(img0, self.img_size, stride=self.stride, auto=self.auto)[0]
@@ -225,15 +232,26 @@ class LoadImages:  # for inference
         img = img.transpose((2, 0, 1))[::-1]  # HWC to CHW, BGR to RGB
         img = np.ascontiguousarray(img)
 
-        return path, img, img0, self.cap
+        return path, img, img0, self.cap, frame
 
     def new_video(self, path):
         self.frame = 0
         self.cap = cv2.VideoCapture(path)
+        if self.fps is not None:
+            self.cap.set(cv2.CAP_PROP_FPS, self.fps)
         self.frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
+    def _count_video_frames(self):
+        n = 0
+        for is_video, path in zip(self.video_flag, self.files):
+            if is_video:
+                cap = cv2.VideoCapture(path)
+                n += int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                cap.release()
+        return n
+
     def __len__(self):
-        return self.nf  # number of files
+        return self.n_frames  # number of files
 
 
 class LoadWebcam:  # for inference
