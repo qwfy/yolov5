@@ -246,6 +246,8 @@ class LoadImages:  # for inference
         for is_video, path in zip(self.video_flag, self.files):
             if is_video:
                 cap = cv2.VideoCapture(path)
+                if self.fps is not None:
+                    self.cap.set(cv2.CAP_PROP_FPS, self.fps)
                 n += int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
                 cap.release()
         return n

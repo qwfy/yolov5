@@ -36,6 +36,7 @@ def parse_opt(argv):
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
     parser.add_argument('--view-img', default=False, action='store_true', help='show results')
     parser.add_argument('--save-txt', default=False, action='store_true', help='save results to *.txt')
+    parser.add_argument('--save-txt-basename', default='labels.csv', type=str, help='basename for the saved label')
     parser.add_argument('--save-conf', default=False, action='store_true', help='save confidences in --save-txt labels')
     parser.add_argument('--save-crop', default=False, action='store_true', help='save cropped prediction boxes')
     parser.add_argument('--nosave', default=False, action='store_true', help='do not save images/videos')
@@ -65,6 +66,7 @@ def run(weights,
         device,
         view_img,
         save_txt,
+        save_txt_basename,
         save_conf,
         save_crop,
         nosave,
@@ -169,7 +171,7 @@ def run(weights,
 
                 p = Path(p)  # to Path
                 save_path = str(save_dir / 'images' / p.name)  # img.jpg
-                txt_path = str(save_dir / 'label.csv')
+                txt_path = str(save_dir / save_txt_basename)
                 if dataset.mode == 'image':
                     txt_line_lead = p
                 else:
