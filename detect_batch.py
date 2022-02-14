@@ -204,7 +204,7 @@ def run(weights,
                             if save_crop:
                                 save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
                     if save_txt:
-                        with open(txt_path, 'a') as f:
+                        with open(txt_path, 'a', newline='') as f:
                             writer = csv.writer(f)
                             writer.writerows(label_rows)
 
